@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exit Calculator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+      background: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 15px;
+      margin-top: 10px;
+      margin-right: 5px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .list {
+      margin-top: 15px;
+      font-size: 15px;
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 6px;
+    }
+    .results {
+      margin-top: 30px;
+      background: #e6f7e6;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .results h3 {
+      margin-top: 0;
+    }
+    .remove-btn {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 8px;
+      margin-left: 10px;
+      border-radius: 5px;
+      font-size: 12px;
+    }
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+      button {
+        width: 100%;
+        margin-top: 8px;
+        margin-right: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>FNFS Exit Calculator</h2>
+
+  <label>총 엑싯 금액 (USDT)</label>
+  <input type="number" id="exitAmount" placeholder="예: 500000" />
+
+  <label>정산 금액 입력</label>
+  <input type="number" id="settlementInput" placeholder="예: 10000" />
+  <button onclick="addSettlement()">+ 추가</button>
+  <button onclick="clearSettlements()">🗑️ 초기화</button>
+
+  <div class="list" id="settlementList">이전 정산 금액 내역 없음</div>
+
+  <button onclick="calculate()">정산금 계산하기</button>
+
+  <div class="results" id="resultBox" style="display:none;">
+    <h3>정산 결과</h3>
+    <p>실정산비용: <strong id="netAmount"></strong> USDT</p>
+    <p>수수료 (최소 30%이상): <strong id="fee"></strong> USDT</p>
+    <p>재단팀: <strong id="team1"></strong> USDT</p>
+    <p>펀딩팀: <strong id="team2"></strong> USDT</p>
+    <p>MM팀: <strong id="team3"></strong> USDT</p>
+  </div>
+</div>
+
+<script>
+  const settlementValues = JSON.parse(localStorage.getItem('settlementValues')) || [];
+  const listingCost = 120000;
+
+  function addSettlement() {
+    const val = parseFloat(document.getElementById('settlementInput').value);
+    if (!isNaN(val) && val > 0) {
+      settlementValues.push(val);
+      saveToLocalStorage();
+      updateSettlementList();
+      document.getElementById('settlementInput').value = '';
+    }
+  }
+
+  function clearSettlements() {
+    if (confirm('모든 정산 금액을 초기화하시겠습니까?')) {
+      settlementValues.length = 0;
+      saveToLocalStorage();
+      updateSettlementList();
+      document.getElementById('resultBox').style.display = 'none';
+    }
+  }
+
+  function removeSettlement(index) {
+    settlementValues.splice(index, 1);
+    saveToLocalStorage();
+    updateSettlementList();
+    document.getElementById('resultBox').style.display = 'none';
+  }
+
+  function saveToLocalStorage() {
+    localStorage.setItem('settlementValues', JSON.stringify(settlementValues));
+  }
+
+  function updateSettlementList() {
+    const listDiv = document.getElementById('settlementList');
+    if (settlementValues.length === 0) {
+      listDiv.innerText = '정산 금액 내역 없음';
+    } else {
+      listDiv.innerHTML = '정산 내역:<br>' + settlementValues.map((v, i) => `
+        <div>
+          - ${i + 1}차: ${v.toLocaleString()} 원
+          <button class="remove-btn" onclick="removeSettlement(${i})">삭제</button>
+        </div>`).join('');
+    }
+  }
+
+  function calculate() {
+    const exitAmount = parseFloat(document.getElementById('exitAmount').value);
+    if (isNaN(exitAmount)) {
+      alert("총 엑싯 금액을 입력하세요.");
+      return;
+    }
+
+    const totalSettlements = settlementValues.reduce((a, b) => a + b, 0);
+    const net = exitAmount - listingCost - totalSettlements;
+
+    if (net < 0) {
+      alert("실정산비용이 0보다 작습니다. 정산 금액을 확인하세요.");
+      return;
+    }
+
+    document.getElementById('netAmount').innerText = net.toLocaleString();
+    document.getElementById('fee').innerText = (net * 0.30).toLocaleString();
+    document.getElementById('team1').innerText = (net * 0.14).toLocaleString();
+    document.getElementById('team2').innerText = (net * 0.07).toLocaleString();
+    document.getElementById('team3').innerText = (net * 0.49).toLocaleString();
+    document.getElementById('resultBox').style.display = 'block';
+  }
+
+  // Load on page load
+  window.onload = () => {
+    updateSettlementList();
+  };
+</script>
+
+</body>
+</html>
