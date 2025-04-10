@@ -99,6 +99,9 @@
   <label>총 엑싯 금액 (USDT)</label>
   <input type="number" id="exitAmount" placeholder="예: 500000" />
 
+  <label>상장 비용 (USDT)</label>
+  <input type="number" id="listingCostInput" placeholder="예: 120000" />
+
   <label>정산 금액 입력</label>
   <input type="number" id="settlementInput" placeholder="예: 10000" />
   <button onclick="addSettlement()">+ 추가</button>
@@ -120,7 +123,7 @@
 
 <script>
   const settlementValues = JSON.parse(localStorage.getItem('settlementValues')) || [];
-  const listingCost = 120000;
+  
 
   function addSettlement() {
     const val = parseFloat(document.getElementById('settlementInput').value);
@@ -167,6 +170,7 @@
 
   function calculate() {
     const exitAmount = parseFloat(document.getElementById('exitAmount').value);
+  const listingCost = parseFloat(document.getElementById('listingCostInput').value);
     if (isNaN(exitAmount)) {
       alert("총 엑싯 금액을 입력하세요.");
       return;
